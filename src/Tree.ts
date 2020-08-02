@@ -22,7 +22,7 @@ export class Directory {
         f.parent = this;
     }
 
-    add_n_dir(time: Date, p: string): any {
+    async add_n_dir(time: Date, p: string): Promise<any> {
         const parts = p.split("/");
         const name = parts.shift()!;
         const old = this.c_dir.find((c) => c.name === name);
@@ -33,7 +33,7 @@ export class Directory {
             const ndir = new Directory(time, name);
             this.add_dir(ndir);
             if (parts.length > 0) {
-                ndir.add_n_dir(time, parts.join("/"));
+                await ndir.add_n_dir(time, parts.join("/"));
             }
         }
     }
@@ -49,9 +49,9 @@ export class Directory {
             return null;
         }
     }
-    add_n_file(time: Date, p: string, fname: string, size: number) {
+    async add_n_file(time: Date, p: string, fname: string, size: number) {
         if (p !== "") {
-            this.add_n_dir(time, p);
+            await this.add_n_dir(time, p);
             const dir = this.find_dir(p) as Directory;
             const nfile = new File(time, fname, size);
             dir.add_file(nfile);
@@ -63,13 +63,28 @@ export class Directory {
 
     //TODO: add sorting
 
-    to_linear(): (Directory | File)[] {
-        const arr = [];
-        for (const d of this.c_dir) {
-            arr.push(d);
-            arr.push(...d.to_linear());
+    async process_to_stack(stack: (File | Directory)[], d: Directory) {
+        for (let k = d.c_file.length - 1; k >= 0; k--) {
+            stack.push(d.c_file[k]);
         }
-        arr.push(...this.c_file);
+        for (let k = d.c_dir.length - 1; k >= 0; k--) {
+            stack.push(d.c_dir[k]);
+        }
+    }
+
+    async to_linear() {
+        const arr = [];
+        const stack: (Directory | File)[] = [];
+        await this.process_to_stack(stack, this);
+        while (stack.length > 0) {
+            const el = stack.pop();
+            if (el instanceof File) {
+                arr.push(el);
+            } else if (el instanceof Directory) {
+                arr.push(el);
+                await this.process_to_stack(stack, el);
+            }
+        }
         return arr;
     }
 

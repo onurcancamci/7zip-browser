@@ -16,7 +16,9 @@ async function main() {
     const input = process.argv[i + 1];
     const outDir = process.argv[o + 1];
     const $ = await Zip.LoadFile(input);
-    const $$ = $.to_linear();
+    console.log("Loaded");
+    const $$ = await $.to_linear();
+    console.log("To Linear Done");
     $$.unshift($);
     $.open();
     $.shown = true;

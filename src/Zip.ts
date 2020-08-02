@@ -22,11 +22,16 @@ export class Zip {
         for await (const f of stream as any) {
             const obj: I7zObj = f;
             if (obj.attributes === "D....") {
-                $.add_n_dir(obj.datetime, obj.file);
+                await $.add_n_dir(obj.datetime, obj.file);
             } else if (obj.attributes === "....A") {
                 const parts = obj.file.split("/");
                 const name = parts.pop()!;
-                $.add_n_file(obj.datetime, parts.join("/"), name, obj.size);
+                await $.add_n_file(
+                    obj.datetime,
+                    parts.join("/"),
+                    name,
+                    obj.size
+                );
             }
         }
         return $;

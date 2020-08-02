@@ -1,2 +1,2 @@
 #!/bin/bash
-node ./dist/index.js $1 $2 $3 $4
+node $(dirname "$0")/dist/index.js $1 $2 $3 $4

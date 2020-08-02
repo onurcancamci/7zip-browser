@@ -29,11 +29,11 @@ export class Term {
         stdin.setEncoding("utf8");
         stdin.on("data", async (keyBuff) => {
             const key = keyBuff.toString("utf8");
-            if (key == "\u001B\u005B\u0041") {
+            if (key == "\u001B\u005B\u0041" || key == "k") {
                 //up
                 this.CursorUp();
             }
-            if (key == "\u001B\u005B\u0043") {
+            if (key == "\u001B\u005B\u0043" || key == "j") {
                 //right
             }
             if (key == "\u001B\u005B\u0042") {

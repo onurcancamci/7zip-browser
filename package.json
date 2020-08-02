@@ -4,8 +4,8 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "dev": "tsc-watch --onSuccess \"node ./dist/index.js -i ./test.7z -o test-ex\""
+        "dev": "tsc-watch --onSuccess \"node ./dist/index.js -i ./test.7z -o test-ex\"",
+        "build": "tsc"
     },
     "author": "",
     "license": "ISC",

@@ -18,6 +18,7 @@ export class Term {
     static info: IFileInfo;
     static cursor: null | Directory | File = null;
     static frameStart = 0;
+    static isExtracting = false;
 
     static async Init($: Directory, $$: (Directory | File)[], info: IFileInfo) {
         this.$ = $;
@@ -29,6 +30,12 @@ export class Term {
         stdin.setEncoding("utf8");
         stdin.on("data", async (keyBuff) => {
             const key = keyBuff.toString("utf8");
+            if (key == "\u0003") {
+                process.exit();
+            } // ctrl-c
+            if (this.isExtracting) {
+                return;
+            }
             if (key == "\u001B\u005B\u0041" || key == "k") {
                 //up
                 this.CursorUp();
@@ -69,19 +76,18 @@ export class Term {
             //console.log(Buffer.from(key).toString("hex"));
 
             await this.Draw();
-            if (key == "\u0003") {
-                process.exit();
-            } // ctrl-c
         });
     }
 
     static async Extract() {
-        const files = this.$.files_to_extract("");
+        const files = await this.$.files_to_extract();
         if (files.length === 0) {
             console.clear();
             console.log("No Files Selected");
             return;
         }
+        this.isExtracting = true;
+        await this.Draw();
         await Zip.Extract(this.info.path, this.info.outDir, files);
     }
 
@@ -164,6 +170,10 @@ export class Term {
 
     static async Draw() {
         console.clear();
+        if (this.isExtracting) {
+            console.log("Extracting");
+            return;
+        }
         this.Write(await this.Header());
         this.Write(await this.DrawTree());
         terminal.moveTo(1, 1);

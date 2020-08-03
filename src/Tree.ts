@@ -49,14 +49,20 @@ export class Directory {
             return null;
         }
     }
-    async add_n_file(time: Date, p: string, fname: string, size: number) {
+    async add_n_file(
+        time: Date,
+        p: string,
+        fname: string,
+        size: number,
+        fullPath: string
+    ) {
         if (p !== "") {
             await this.add_n_dir(time, p);
             const dir = this.find_dir(p) as Directory;
-            const nfile = new File(time, fname, size);
+            const nfile = new File(time, fname, size, fullPath);
             dir.add_file(nfile);
         } else {
-            const nfile = new File(time, fname, size);
+            const nfile = new File(time, fname, size, fullPath);
             this.add_file(nfile);
         }
     }
@@ -130,18 +136,29 @@ export class Directory {
             this._mark = true;
         }
     }
+    async process_to_stack_files(stack: (File | Directory)[], d: Directory) {
+        for (let k = d.c_file.length - 1; k >= 0; k--) {
+            if (!d.c_file[k].marked) continue;
+            stack.push(d.c_file[k]);
+        }
+        for (let k = d.c_dir.length - 1; k >= 0; k--) {
+            stack.push(d.c_dir[k]);
+        }
+    }
 
-    files_to_extract(prefix: string): string[] {
-        const files = [];
-        for (const f of this.c_file) {
-            if (f.marked) {
-                files.push(prefix + f.name);
+    async files_to_extract(): Promise<string[]> {
+        const arr = [];
+        const stack: (Directory | File)[] = [];
+        await this.process_to_stack(stack, this);
+        while (stack.length > 0) {
+            const el = stack.pop();
+            if (el instanceof File) {
+                if (el.marked) arr.push(el.fullPath);
+            } else if (el instanceof Directory) {
+                await this.process_to_stack_files(stack, el);
             }
         }
-        for (const d of this.c_dir) {
-            files.push(...d.files_to_extract(`${d.name}/`));
-        }
-        return files;
+        return arr;
     }
 }
 
@@ -151,7 +168,12 @@ export class File {
     level = 0;
     marked = false;
 
-    constructor(public time: Date, public name: string, public size: number) {
+    constructor(
+        public time: Date,
+        public name: string,
+        public size: number,
+        public fullPath: string
+    ) {
         //
     }
 

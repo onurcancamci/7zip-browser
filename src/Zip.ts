@@ -30,7 +30,8 @@ export class Zip {
                     obj.datetime,
                     parts.join("/"),
                     name,
-                    obj.size
+                    obj.size,
+                    obj.file
                 );
             }
         }
@@ -38,12 +39,40 @@ export class Zip {
     }
 
     static async Extract(p: string, outDir: string, files: string[]) {
-        writeFileSync("./log.txt", "");
-        appendFileSync("./log.txt", JSON.stringify(files));
-        const stream = await Z.extractFull(p, outDir, {
-            $cherryPick: files,
-        });
-        (stream as any).on("end", process.exit);
+        //writeFileSync("./log.txt", "");
+        //appendFileSync("./log.txt", JSON.stringify(files));
+        const chunks = [];
+        for (let k = 0; k < files.length; ) {
+            if (k + 500 > files.length) {
+                chunks.push(files.slice(k));
+            } else {
+                chunks.push(files.slice(k, k + 500));
+            }
+            k += 500;
+        }
+        for (let k = 0; k < chunks.length; ) {
+            const ps = [];
+            for (let l = 0; l < 8; l++) {
+                const c = chunks[k];
+                if (!c || c.length === 0) {
+                    k++;
+                    continue;
+                }
+                const stream = await Z.extractFull(p, outDir, {
+                    $cherryPick: c,
+                });
+                ps.push(
+                    new Promise((res) => {
+                        (stream as any).on("end", res);
+                        ((stream as any) as ReadStream).destroy();
+                    })
+                );
+                k++;
+            }
+            await Promise.all(ps);
+        }
+
+        process.exit();
     }
 
     static async Test() {

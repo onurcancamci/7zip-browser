@@ -43,12 +43,12 @@ export class Zip {
         //appendFileSync("./log.txt", JSON.stringify(files));
         const chunks = [];
         for (let k = 0; k < files.length; ) {
-            if (k + 500 > files.length) {
+            if (k + 1500 > files.length) {
                 chunks.push(files.slice(k));
             } else {
-                chunks.push(files.slice(k, k + 500));
+                chunks.push(files.slice(k, k + 1500));
             }
-            k += 500;
+            k += 1500;
         }
         for (let k = 0; k < chunks.length; ) {
             const ps = [];

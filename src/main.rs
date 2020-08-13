@@ -14,11 +14,25 @@ fn main() {
     //comm();
     let args: Vec<String> = std::env::args().collect();
     println!("{:?}", args);
-    Zip::extract_w_listfile(
+    /* Zip::extract_w_listfile(
         &Path::new(&args[1]),
         &Path::new(&args[2]),
         &Path::new(&args[3]),
     );
+    */
+    let z_dir = Zip::create_tree(&Path::new(&args[1]));
+    println!("\n\nDONE\n");
+    println!("{:#?}", z_dir);
+
+    //let mut dir = Directory::new("$", "$");
+
+    /*dir.add_dir("a", "a");
+        dir.add_dir("a/b", "a/b");
+        dir.add_dir("a/c", "a/c");
+        dir.add_dir("a/b/d", "a/b/d");
+        println!("{:#?}", dir);
+        println!("{:#?}", dir.find_dir_mut("a/b/d"));
+    */
 }
 
 fn ui() {

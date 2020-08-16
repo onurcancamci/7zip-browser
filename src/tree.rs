@@ -17,6 +17,7 @@ pub struct Directory {
     marked: bool,
     shown: bool,
     level: i32,
+    child_shown: bool,
 }
 
 #[derive(Debug)]
@@ -70,6 +71,7 @@ impl Directory {
             marked: false,
             shown: false,
             level,
+            child_shown: false,
         }
     }
 
@@ -191,12 +193,15 @@ impl Directory {
         self.shown = val;
     }
 
-    pub fn set_shown_rec(&mut self, val: bool) {
+    pub fn set_shown_rec(&mut self, val: bool, initial: bool) {
+        if !initial {
+            self.set_shown(false);
+        }
         for f in self.c_file.iter_mut() {
             f.set_shown(val);
         }
         for d in self.c_dir.iter_mut() {
-            d.set_shown_rec(val);
+            d.set_shown_rec(val, false);
         }
     }
 
@@ -207,7 +212,18 @@ impl Directory {
 
     pub fn close(&mut self, path: &str) {
         let dir = self.find_dir_mut(path);
-        dir.set_shown_rec(false);
+        dir.set_shown_rec(false, true);
+    }
+
+    pub fn toggle_open(&mut self, path: &str) {
+        let dir = self.find_dir_mut(path);
+        if dir.child_shown {
+            dir.set_shown_rec(false, true);
+            dir.child_shown = false;
+        } else {
+            dir.set_shown_child(true);
+            dir.child_shown = true;
+        }
     }
 
     pub fn get_level(&self) -> i32 {

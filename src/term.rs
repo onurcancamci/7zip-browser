@@ -16,6 +16,7 @@ pub struct Term {
     prev_cursor: Option<String>,
     will_down_move_frame: bool,
     will_up_move_frame: bool,
+    is_cursor_dir: bool,
 }
 
 impl Term {
@@ -29,6 +30,7 @@ impl Term {
             prev_cursor: None,
             will_up_move_frame: false,
             will_down_move_frame: false,
+            is_cursor_dir: true,
         }
     }
     pub fn draw(&mut self) {
@@ -120,9 +122,15 @@ impl Term {
                         if f.is_marked() { "x" } else { " " },
                         f.get_name()
                     );
+                    if is_cursor {
+                        self.is_cursor_dir = false;
+                    }
                 }
                 Node::Directory(d) => {
                     print!("{}{}/", "  ".repeat(d.get_level() as usize), d.get_name());
+                    if is_cursor {
+                        self.is_cursor_dir = true;
+                    }
                 }
             }
             print!("{}{}", Bg(color::Reset), Fg(color::Reset));
@@ -171,6 +179,11 @@ impl Term {
                 //right
             } else if keycode == 68 {
                 //left
+            } else if keycode == 13 {
+                //enter
+                if self.is_cursor_dir && self.cursor != "$" {
+                    self.root.toggle_open(&self.cursor);
+                }
             }
             self.draw();
             //println!("{}\r", keycode);

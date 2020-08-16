@@ -35,7 +35,7 @@ impl Zip {
         let out = child.stdout.expect("Cant Get Output");
         let reader = BufReader::new(out);
         let mut data_start = false;
-        let mut dir = Directory::new("$", "$");
+        let mut dir = Directory::new("$", "$", 0);
         for line in reader.lines() {
             let line = line.expect("7z List Read Error");
             if !data_start && is_data_marker_line(&line) {

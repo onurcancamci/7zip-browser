@@ -1,10 +1,11 @@
 use std::collections::VecDeque;
 use std::ops::Add;
 
-//pub enum Node {
-//    Directory(Directory),
-//    File(File),
-//}
+#[derive(Debug)]
+pub enum Node<'a> {
+    Directory(&'a Directory),
+    File(&'a File),
+}
 
 #[derive(Debug)]
 pub struct Directory {
@@ -13,30 +14,62 @@ pub struct Directory {
 
     name: String,
     full_path: String,
+    marked: bool,
+    shown: bool,
+    level: i32,
 }
 
 #[derive(Debug)]
 pub struct File {
     name: String,
     full_path: String,
+    marked: bool,
+    shown: bool,
+    level: i32,
 }
 
 impl File {
-    pub fn new(name: &str, full_path: &str) -> Self {
+    pub fn new(name: &str, full_path: &str, level: i32) -> Self {
         File {
             name: name.to_owned(),
             full_path: full_path.to_owned(),
+            marked: false,
+            shown: false,
+            level,
         }
+    }
+
+    pub fn set_shown(&mut self, val: bool) {
+        self.shown = val;
+    }
+
+    pub fn get_level(&self) -> i32 {
+        self.level
+    }
+
+    pub fn is_marked(&self) -> bool {
+        self.marked
+    }
+
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn get_full_path(&self) -> String {
+        self.full_path.clone()
     }
 }
 
 impl Directory {
-    pub fn new(name: &str, full_path: &str) -> Self {
+    pub fn new(name: &str, full_path: &str, level: i32) -> Self {
         Directory {
             c_dir: vec![],
             c_file: vec![],
             name: name.to_owned(),
             full_path: full_path.to_owned(),
+            marked: false,
+            shown: false,
+            level,
         }
     }
 
@@ -61,7 +94,8 @@ impl Directory {
             });
             current_d.add_dir(&n_path_str, f_path);
         } else {
-            self.c_dir.push(Directory::new(c_name, f_path));
+            self.c_dir
+                .push(Directory::new(c_name, f_path, self.level + 1));
         }
     }
 
@@ -104,9 +138,100 @@ impl Directory {
                 }
             });
             let dir = self.find_dir_mut(&n_path_str);
-            dir.c_file.push(File::new(c_name, path));
+            dir.c_file.push(File::new(c_name, path, dir.level + 1));
         } else {
-            self.c_file.push(File::new(c_name, path));
+            self.c_file.push(File::new(c_name, path, self.level + 1));
+        }
+    }
+
+    pub fn marked_list<'a>(&'a self) -> Vec<Node<'a>> {
+        let mut v: Vec<Node<'a>> = vec![];
+        for d in self.c_dir.iter() {
+            if d.marked {
+                v.push(Node::Directory(d));
+            }
+            let mut dir_res = d.marked_list();
+            v.append(&mut dir_res);
+        }
+        for f in self.c_file.iter() {
+            if f.marked {
+                v.push(Node::File(f));
+            }
+        }
+        v
+    }
+
+    pub fn shown_list<'a>(&'a self) -> Vec<Node<'a>> {
+        let mut v: Vec<Node<'a>> = vec![];
+        if self.shown {
+            v.push(Node::Directory(self));
+        }
+        for d in self.c_dir.iter() {
+            let mut dir_res = d.shown_list();
+            v.append(&mut dir_res);
+        }
+        for f in self.c_file.iter() {
+            if f.shown {
+                v.push(Node::File(f));
+            }
+        }
+        v
+    }
+
+    pub fn set_shown_child(&mut self, val: bool) {
+        for f in self.c_file.iter_mut() {
+            f.set_shown(val);
+        }
+        for d in self.c_dir.iter_mut() {
+            d.set_shown(val);
+        }
+    }
+
+    pub fn set_shown(&mut self, val: bool) {
+        self.shown = val;
+    }
+
+    pub fn set_shown_rec(&mut self, val: bool) {
+        for f in self.c_file.iter_mut() {
+            f.set_shown(val);
+        }
+        for d in self.c_dir.iter_mut() {
+            d.set_shown_rec(val);
+        }
+    }
+
+    pub fn open(&mut self, path: &str) {
+        let dir = self.find_dir_mut(path);
+        dir.set_shown_child(true);
+    }
+
+    pub fn close(&mut self, path: &str) {
+        let dir = self.find_dir_mut(path);
+        dir.set_shown_rec(false);
+    }
+
+    pub fn get_level(&self) -> i32 {
+        self.level
+    }
+
+    pub fn is_marked(&self) -> bool {
+        self.marked
+    }
+
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn get_full_path(&self) -> String {
+        self.full_path.clone()
+    }
+}
+
+impl<'a> Node<'a> {
+    pub fn get_full_path(&self) -> String {
+        match self {
+            Node::File(v) => v.get_full_path(),
+            Node::Directory(v) => v.get_full_path(),
         }
     }
 }

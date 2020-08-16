@@ -20,9 +20,22 @@ fn main() {
         &Path::new(&args[3]),
     );
     */
-    let z_dir = Zip::create_tree(&Path::new(&args[1]));
+    let mut z_dir = Zip::create_tree(&Path::new(&args[1]));
+    z_dir.set_shown_child(true);
+    z_dir.set_shown(true);
     println!("\n\nDONE\n");
-    println!("{:#?}", z_dir);
+    //println!("{:#?}", z_dir);
+    //let v = z_dir.shown_list();
+    //println!("{:#?}", v);
+
+    ui(z_dir);
+
+    //println!("{:#?}", z_dir);
+    //z_dir.open("c");
+    //let v = z_dir.shown_list();
+    //let v2 = z_dir.marked_list();
+    //z_dir.add_file("/asdf");
+    //println!("{:#?}", v);
 
     //let mut dir = Directory::new("$", "$");
 
@@ -35,8 +48,8 @@ fn main() {
     */
 }
 
-fn ui() {
-    let mut term = Term::new();
+fn ui(root: Directory) {
+    let mut term = Term::new(root);
     term.ui_loop();
 }
 

@@ -59,6 +59,10 @@ impl File {
     pub fn get_full_path(&self) -> String {
         self.full_path.clone()
     }
+
+    pub fn set_marked(&mut self, val: bool) {
+        self.marked = val;
+    }
 }
 
 impl Directory {
@@ -123,6 +127,25 @@ impl Directory {
         } else {
             current_d
         }
+    }
+
+    pub fn find_file_mut(&mut self, path: &str) -> &mut File {
+        let last_slash = path.rfind("/");
+        let (dir, filename) = match last_slash {
+            Some(last_slash) => {
+                let (dir_path, filename) = path.split_at(last_slash);
+                let filename = &filename[1..filename.len()]; //because "/" stays with filename
+                (self.find_dir_mut(dir_path), filename)
+            }
+            None => {
+                // file at root
+                (self, path)
+            }
+        };
+        dir.c_file
+            .iter_mut()
+            .find(|el| el.get_name() == filename)
+            .expect("Cant Find File Selected, Error In System")
     }
 
     //TODO: add time, date and size
@@ -193,6 +216,10 @@ impl Directory {
         self.shown = val;
     }
 
+    pub fn set_marked(&mut self, val: bool) {
+        self.marked = val;
+    }
+
     pub fn set_shown_rec(&mut self, val: bool, initial: bool) {
         if !initial {
             self.set_shown(false);
@@ -202,6 +229,16 @@ impl Directory {
         }
         for d in self.c_dir.iter_mut() {
             d.set_shown_rec(val, false);
+        }
+    }
+
+    pub fn set_marked_rec(&mut self, val: bool) {
+        self.set_marked(val);
+        for f in self.c_file.iter_mut() {
+            f.set_marked(val);
+        }
+        for d in self.c_dir.iter_mut() {
+            d.set_marked_rec(val);
         }
     }
 
@@ -216,7 +253,11 @@ impl Directory {
     }
 
     pub fn toggle_open(&mut self, path: &str) {
-        let dir = self.find_dir_mut(path);
+        let dir = if path == "$" {
+            self
+        } else {
+            self.find_dir_mut(path)
+        };
         if dir.child_shown {
             dir.set_shown_rec(false, true);
             dir.child_shown = false;
@@ -224,6 +265,24 @@ impl Directory {
             dir.set_shown_child(true);
             dir.child_shown = true;
         }
+    }
+
+    pub fn toggle_marked(&mut self, path: &str) {
+        let dir = if path == "$" {
+            self
+        } else {
+            self.find_dir_mut(path)
+        };
+        if dir.marked {
+            dir.set_marked_rec(false);
+        } else {
+            dir.set_marked_rec(true);
+        }
+    }
+
+    pub fn toggle_marked_file(&mut self, path: &str) {
+        let f = self.find_file_mut(path);
+        f.set_marked(!f.is_marked());
     }
 
     pub fn get_level(&self) -> i32 {

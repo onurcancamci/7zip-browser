@@ -181,12 +181,21 @@ impl Term {
                 //left
             } else if keycode == 13 {
                 //enter
-                if self.is_cursor_dir && self.cursor != "$" {
+                if self.is_cursor_dir {
                     self.root.toggle_open(&self.cursor);
+                } else {
+                    self.root.toggle_marked_file(&self.cursor);
+                }
+            } else if keycode == 109 {
+                //m
+                if self.is_cursor_dir {
+                    self.root.toggle_marked(&self.cursor);
+                } else {
+                    self.root.toggle_marked_file(&self.cursor);
                 }
             }
             self.draw();
-            //println!("{}\r", keycode);
+            println!("{}\r", keycode);
         }
     }
 }

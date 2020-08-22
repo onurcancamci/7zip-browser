@@ -1,5 +1,7 @@
 use crate::*;
+use std::fs;
 use std::io::{stdin, stdout, Read, Stdout, Write};
+use std::path::Path;
 use termion::color;
 use termion::color::{Bg, Color, Fg, Reset};
 use termion::cursor;
@@ -9,8 +11,12 @@ use termion::raw::{IntoRawMode, RawTerminal};
 pub struct Term {
     _stdout: RawTerminal<Stdout>,
     root: Directory,
+    out_dir: String,
+    in_file: String,
+
     frame_start: usize,
     cursor: String,
+    help_menu: bool,
 
     next_cursor: Option<String>,
     prev_cursor: Option<String>,
@@ -20,10 +26,10 @@ pub struct Term {
 }
 
 impl Term {
-    pub fn new(root: Directory) -> Self {
+    pub fn new(root: Directory, in_file: String, out_dir: String) -> Self {
         Term {
             _stdout: stdout().into_raw_mode().unwrap(),
-            cursor: root.get_name(),
+            cursor: root.get_name().to_owned(),
             root,
             frame_start: 0,
             next_cursor: None,
@@ -31,11 +37,14 @@ impl Term {
             will_up_move_frame: false,
             will_down_move_frame: false,
             is_cursor_dir: true,
+            out_dir,
+            in_file,
+            help_menu: false,
         }
     }
     pub fn draw(&mut self) {
         self.clear();
-        let mut header: String = format!("  Header");
+        let mut header: String = format!("  Help for '?'");
         let (w, h) = termion::terminal_size().unwrap();
         let space = " ".repeat((w as usize) - header.len());
         header = format!("{}{}", header, space);
@@ -49,6 +58,11 @@ impl Term {
         );
 
         print!("\r\n\r\n");
+
+        if self.help_menu {
+            println!("Up/Down or k/j to move\r\nEnter to open/close folders and mark files\r\n'm' to mark folders or files\r\n'e' to extract marked files and folders\r\nPress any key to close this menu\r");
+            return;
+        }
 
         let showns = self.root.shown_list();
         //calculate frame size
@@ -85,10 +99,10 @@ impl Term {
                 } else if k == self.frame_start + 1 {
                     //means cursor is 1 element below of first element
                     self.will_up_move_frame = self.frame_start > 0;
-                    self.prev_cursor = Some((&showns[k - 1]).get_full_path());
+                    self.prev_cursor = Some((&showns[k - 1]).get_full_path().to_owned());
                 } else {
                     self.will_up_move_frame = false;
-                    self.prev_cursor = Some((&showns[k - 1]).get_full_path());
+                    self.prev_cursor = Some((&showns[k - 1]).get_full_path().to_owned());
                 }
 
                 if k == last_pos - 1 {
@@ -103,10 +117,10 @@ impl Term {
                 } else if k == last_pos - 2 {
                     //last element
                     self.will_down_move_frame = self.frame_start + (fh as usize) < showns.len();
-                    self.next_cursor = Some((&showns[k + 1]).get_full_path());
+                    self.next_cursor = Some((&showns[k + 1]).get_full_path().to_owned());
                 } else {
                     self.will_down_move_frame = false;
-                    self.next_cursor = Some((&showns[k + 1]).get_full_path());
+                    self.next_cursor = Some((&showns[k + 1]).get_full_path().to_owned());
                 }
             }
             if is_cursor {
@@ -147,19 +161,38 @@ impl Term {
     }
     fn clear(&mut self) {
         print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
-        //write!(self._stdout, "{esc}[2J{esc}[1;1H", esc = 27 as char).unwrap();
-        //self._stdout.flush().unwrap();
     }
-    pub fn ui_loop(&mut self) {
+
+    fn write_list_file(&self) -> String {
+        let list = self.root.marked_list();
+        let path_string = if Path::new("/tmp").exists() {
+            format!("/tmp/.7zb-list-test.tmp")
+        } else {
+            format!("./.7zb-list-test.tmp")
+        };
+        let path = Path::new(&path_string);
+        let mut file = fs::File::create(path).expect("Temporary list file creation error");
+        for n in list {
+            file.write(n.get_full_path().as_bytes())
+                .expect("Temporary list write error");
+            file.write("\n".as_bytes())
+                .expect("Temporary list write error2");
+        }
+        path_string
+    }
+
+    pub fn ui_loop(&mut self) -> Option<String> {
         self.draw();
         //println!("{:#?}", self.next_cursor);
         for keycode in stdin().bytes() {
             let keycode = keycode.unwrap();
+            self.help_menu = false;
+
             if keycode == 3 || keycode == 113 {
                 print!("{}", cursor::Show);
-                break;
+                return None;
             }
-            if keycode == 65 {
+            if keycode == 65 || keycode == 'k' as u8 {
                 //up
                 if self.will_up_move_frame {
                     self.frame_start -= 1;
@@ -167,7 +200,7 @@ impl Term {
                 if let Some(c) = &self.prev_cursor {
                     self.cursor = c.clone();
                 }
-            } else if keycode == 66 {
+            } else if keycode == 66 || keycode == 'j' as u8 {
                 //down
                 if self.will_down_move_frame {
                     self.frame_start += 1;
@@ -186,16 +219,26 @@ impl Term {
                 } else {
                     self.root.toggle_marked_file(&self.cursor);
                 }
-            } else if keycode == 109 {
+            } else if keycode == 'm' as u8 {
                 //m
                 if self.is_cursor_dir {
                     self.root.toggle_marked(&self.cursor);
                 } else {
                     self.root.toggle_marked_file(&self.cursor);
                 }
+            } else if keycode == 'e' as u8 {
+                self.clear();
+                print!("{}", cursor::Show);
+                self._stdout.flush().unwrap();
+                let list_path = self.write_list_file();
+                return Some(list_path);
+            } else if keycode == '?' as u8 {
+                self.help_menu = true;
             }
             self.draw();
-            println!("{}\r", keycode);
+            //println!("{}\r", keycode);
         }
+        print!("{}", cursor::Show);
+        None
     }
 }

@@ -15,20 +15,20 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     println!("{:?}", args);
     /* Zip::extract_w_listfile(
-        &Path::new(&args[1]),
-        &Path::new(&args[2]),
-        &Path::new(&args[3]),
+    &Path::new(&args[1]),
+    &Path::new(&args[2]),
+    &Path::new(&args[3]),
     );
     */
     let mut z_dir = Zip::create_tree(&Path::new(&args[1]));
     z_dir.set_shown_child(true);
     z_dir.set_shown(true);
-    println!("\n\nDONE\n");
+    //println!("\n\nDONE\n");
     //println!("{:#?}", z_dir);
     //let v = z_dir.shown_list();
     //println!("{:#?}", v);
 
-    ui(z_dir);
+    ui(z_dir, (&args[1]).to_owned(), (&args[2]).to_owned());
 
     //println!("{:#?}", z_dir);
     //z_dir.open("c");
@@ -40,17 +40,26 @@ fn main() {
     //let mut dir = Directory::new("$", "$");
 
     /*dir.add_dir("a", "a");
-        dir.add_dir("a/b", "a/b");
-        dir.add_dir("a/c", "a/c");
-        dir.add_dir("a/b/d", "a/b/d");
-        println!("{:#?}", dir);
-        println!("{:#?}", dir.find_dir_mut("a/b/d"));
+    dir.add_dir("a/b", "a/b");
+    dir.add_dir("a/c", "a/c");
+    dir.add_dir("a/b/d", "a/b/d");
+    println!("{:#?}", dir);
+    println!("{:#?}", dir.find_dir_mut("a/b/d"));
     */
 }
 
-fn ui(root: Directory) {
-    let mut term = Term::new(root);
-    term.ui_loop();
+fn ui(root: Directory, in_file: String, out_dir: String) {
+    let mut term = Term::new(root, in_file.clone(), out_dir.clone());
+    let list = term.ui_loop();
+    drop(term); // drop is here to return terminal to its normal state
+    if let Some(list) = list {
+        Zip::extract_w_listfile(
+            &Path::new(&in_file),
+            &Path::new(&out_dir),
+            &Path::new(&list),
+        );
+        //TODO: remove list file
+    }
 }
 
 fn comm() {

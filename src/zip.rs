@@ -18,7 +18,8 @@ impl Zip {
                 out_dir.to_str().expect("Out Dir Path Is Invalid")
             ))
             .arg("-bsp1")
-            .stdout(Stdio::piped())
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
             .spawn()
             .expect("Cant Spawn Command");
 
@@ -47,6 +48,8 @@ impl Zip {
             }
             if data_start {
                 let segments: Vec<&str> = line.split_whitespace().map(|s| s.trim()).collect();
+                let (_, name) = line.split_at(53);
+                let name = name.trim();
                 /*println!(
                     "[{}] -> {}",
                     if is_data_marker_line(&line) { "x" } else { " " },
@@ -54,12 +57,15 @@ impl Zip {
                 );
                 println!("=====> {:?}", segments);*/
                 if segments[2].contains("D") {
-                    dir.add_dir(segments.last().unwrap(), segments.last().unwrap());
+                    dir.add_dir(name, name);
                 } else if segments[2].contains("A") {
-                    dir.add_file(segments.last().unwrap());
+                    dir.add_file(name);
                 } else {
                     eprintln!("\nAttribute is {}\n{}", segments[2], line);
                 }
+                /*if segments[2] != "D...." && segments[2] != "....A" {
+                    eprintln!("Attr {} {}", segments[2], segments.last().unwrap());
+                }*/
             }
         }
         dir

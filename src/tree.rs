@@ -29,6 +29,15 @@ pub struct File {
     level: i32,
 }
 
+pub trait FSNode {
+    fn set_shown(&mut self, val: bool);
+    fn get_level(&self) -> i32;
+    fn is_marked(&self) -> bool;
+    fn get_name(&self) -> &str;
+    fn get_full_path(&self) -> &str;
+    fn set_marked(&mut self, val: bool);
+}
+
 impl File {
     pub fn new(name: &str, full_path: &str, level: i32) -> Self {
         File {
@@ -39,28 +48,30 @@ impl File {
             level,
         }
     }
+}
 
-    pub fn set_shown(&mut self, val: bool) {
+impl FSNode for File {
+    fn set_shown(&mut self, val: bool) {
         self.shown = val;
     }
 
-    pub fn get_level(&self) -> i32 {
+    fn get_level(&self) -> i32 {
         self.level
     }
 
-    pub fn is_marked(&self) -> bool {
+    fn is_marked(&self) -> bool {
         self.marked
     }
 
-    pub fn get_name(&self) -> String {
-        self.name.clone()
+    fn get_name(&self) -> &str {
+        &self.name
     }
 
-    pub fn get_full_path(&self) -> String {
-        self.full_path.clone()
+    fn get_full_path(&self) -> &str {
+        &self.full_path
     }
 
-    pub fn set_marked(&mut self, val: bool) {
+    fn set_marked(&mut self, val: bool) {
         self.marked = val;
     }
 }
@@ -100,6 +111,9 @@ impl Directory {
             });
             current_d.add_dir(&n_path_str, f_path);
         } else {
+            /*if self.name == "$" {
+                println!("Dir {} {} {}", c_name, f_path, path);
+            }*/
             self.c_dir
                 .push(Directory::new(c_name, f_path, self.level + 1));
         }
@@ -212,14 +226,6 @@ impl Directory {
         }
     }
 
-    pub fn set_shown(&mut self, val: bool) {
-        self.shown = val;
-    }
-
-    pub fn set_marked(&mut self, val: bool) {
-        self.marked = val;
-    }
-
     pub fn set_shown_rec(&mut self, val: bool, initial: bool) {
         if !initial {
             self.set_shown(false);
@@ -284,29 +290,67 @@ impl Directory {
         let f = self.find_file_mut(path);
         f.set_marked(!f.is_marked());
     }
+}
 
-    pub fn get_level(&self) -> i32 {
+impl FSNode for Directory {
+    fn set_shown(&mut self, val: bool) {
+        self.shown = val;
+    }
+
+    fn get_level(&self) -> i32 {
         self.level
     }
 
-    pub fn is_marked(&self) -> bool {
+    fn is_marked(&self) -> bool {
         self.marked
     }
 
-    pub fn get_name(&self) -> String {
-        self.name.clone()
+    fn get_name(&self) -> &str {
+        &self.name
     }
 
-    pub fn get_full_path(&self) -> String {
-        self.full_path.clone()
+    fn get_full_path(&self) -> &str {
+        &self.full_path
+    }
+
+    fn set_marked(&mut self, val: bool) {
+        self.marked = val;
     }
 }
 
-impl<'a> Node<'a> {
-    pub fn get_full_path(&self) -> String {
+impl<'a> FSNode for Node<'a> {
+    fn get_full_path(&self) -> &str {
         match self {
             Node::File(v) => v.get_full_path(),
             Node::Directory(v) => v.get_full_path(),
+        }
+    }
+
+    fn set_shown(&mut self, _: bool) {
+        panic!("Unspported operation");
+    }
+
+    fn set_marked(&mut self, _: bool) {
+        panic!("Unspported operation");
+    }
+
+    fn get_name(&self) -> &str {
+        match self {
+            Node::File(v) => v.get_name(),
+            Node::Directory(v) => v.get_name(),
+        }
+    }
+
+    fn is_marked(&self) -> bool {
+        match self {
+            Node::File(v) => v.is_marked(),
+            Node::Directory(v) => v.is_marked(),
+        }
+    }
+    fn get_level(&self) -> i32 {
+        match self {
+            Node::File(v) => v.get_level(),
+            Node::Directory(v) => v.get_level(),
         }
     }
 }

@@ -7,6 +7,7 @@ use termion::color::{Bg, Color, Fg, Reset};
 use termion::cursor;
 use termion::cursor::DetectCursorPos;
 use termion::raw::{IntoRawMode, RawTerminal};
+use uuid::Uuid;
 
 pub struct Term {
     _stdout: RawTerminal<Stdout>,
@@ -165,10 +166,13 @@ impl Term {
 
     fn write_list_file(&self) -> String {
         let list = self.root.marked_list();
+        let id = Uuid::new_v4();
+        let mut enc_buf = Uuid::encode_buffer();
+        let sid = id.to_simple().encode_upper(&mut enc_buf);
         let path_string = if Path::new("/tmp").exists() {
-            format!("/tmp/.7zb-list-test.tmp")
+            format!("/tmp/.7zb-list-{}.tmp", sid)
         } else {
-            format!("./.7zb-list-test.tmp")
+            format!("./.7zb-list-{}.tmp", sid)
         };
         let path = Path::new(&path_string);
         let mut file = fs::File::create(path).expect("Temporary list file creation error");

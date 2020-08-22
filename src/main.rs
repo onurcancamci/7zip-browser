@@ -58,7 +58,7 @@ fn ui(root: Directory, in_file: String, out_dir: String) {
             &Path::new(&out_dir),
             &Path::new(&list),
         );
-        //TODO: remove list file
+        let _ = std::fs::remove_file(&Path::new(&list));
     }
 }
 

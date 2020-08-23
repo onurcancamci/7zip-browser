@@ -2,6 +2,7 @@ use crate::*;
 use std::fs;
 use std::io::{stdin, stdout, Read, Stdout, Write};
 use std::path::Path;
+use std::time::{Duration, Instant, SystemTime};
 use termion::color;
 use termion::color::{Bg, Color, Fg, Reset};
 use termion::cursor;
@@ -44,6 +45,7 @@ impl Term {
         }
     }
     pub fn draw(&mut self) {
+        let t_start = Instant::now();
         self.clear();
         let mut header: String = format!("  Help for '?'");
         let (w, h) = termion::terminal_size().unwrap();
@@ -64,8 +66,10 @@ impl Term {
             println!("Up/Down or k/j to move\r\nEnter to open/close folders and mark files\r\n'm' to mark folders or files\r\n'e' to extract marked files and folders\r\nPress any key to close this menu\r");
             return;
         }
-
+        let t_before_shown_list = Instant::now();
         let showns = self.root.shown_list();
+        let t_after_shown_list = Instant::now();
+
         //calculate frame size
         let (_, ch) = self._stdout.cursor_pos().unwrap();
         let fh = (h - ch) - 3;
@@ -86,6 +90,7 @@ impl Term {
         }
 
         let last_pos = usize::min(showns.len(), self.frame_start + fh as usize);
+        let t_before_els = Instant::now();
         for k in self.frame_start..last_pos {
             let el = &showns[k];
             let is_cursor = el.get_full_path() == self.cursor;
@@ -156,9 +161,21 @@ impl Term {
         if self.frame_start + (fh as usize) < showns.len() {
             println!("...\r");
         }
+        let t_after_els = Instant::now();
 
         print!("{}", cursor::Hide);
         stdout().flush().unwrap();
+        let t_end = Instant::now();
+
+        /*print!(
+            "S-E: {} / S-shown: {} / shown: {} / els: {}\r\n",
+            t_end.duration_since(t_start).as_micros(),
+            t_before_shown_list.duration_since(t_start).as_micros(),
+            t_after_shown_list
+                .duration_since(t_before_shown_list)
+                .as_micros(),
+            t_after_els.duration_since(t_before_els).as_micros()
+        );*/
     }
     fn clear(&mut self) {
         print!("{esc}[2J{esc}[1;1H", esc = 27 as char);

@@ -206,8 +206,10 @@ impl Directory {
             v.push(Node::Directory(self));
         }
         for d in self.c_dir.iter() {
-            let mut dir_res = d.shown_list();
-            v.append(&mut dir_res);
+            if d.shown {
+                let mut dir_res = d.shown_list();
+                v.append(&mut dir_res);
+            }
         }
         for f in self.c_file.iter() {
             if f.shown {
